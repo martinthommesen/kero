@@ -184,6 +184,14 @@ final class KeroAgentObservationState {
     var declaredKind: KeroAgentKind?
     var alias: String?
     var lastForegroundPID: pid_t?
+    /// Foreground pid whose recognition result is cached in
+    /// `recognizedKindForPID`. Recognition costs a `proc_pidpath` plus two
+    /// `sysctl` calls per session per 0.75 s tick; the answer for a given pid
+    /// only changes when a wrapper `exec`s into the real agent, so a positive
+    /// result is reused until the foreground pid changes and a nil result is
+    /// simply re-probed.
+    var recognizedPID: pid_t?
+    var recognizedKindForPID: KeroAgentKind?
     var integrationPhase: KeroAgentPhase?
     var integrationReason: String?
     /// Native integrations publish semantic idle, not whether that idle ended
@@ -535,15 +543,32 @@ extension TerminalSession {
         let foreground = surface.foregroundPid
         let shell = shellPid
         let processIsAgent = foreground != nil && foreground != shell
-        let detectedKind = processIsAgent
-            ? foreground.flatMap(KeroAgentKind.recognize(processID:))
-            : nil
+        let detectedKind: KeroAgentKind?
+        if processIsAgent, let foreground {
+            if agentObservation.recognizedPID == foreground,
+               let cached = agentObservation.recognizedKindForPID {
+                detectedKind = cached
+            } else {
+                // Positive results are sticky for this pid; nil is re-probed
+                // because a wrapper script may still exec into the agent.
+                detectedKind = KeroAgentKind.recognize(processID: foreground)
+                agentObservation.recognizedPID = foreground
+                agentObservation.recognizedKindForPID = detectedKind
+            }
+        } else {
+            detectedKind = nil
+        }
         let kind = detectedKind
         if detectedKind != nil {
             agentObservation.commandGraceDeadline = nil
         }
 
         if foreground != agentObservation.lastForegroundPID {
+            // A different foreground process invalidates the cached kind.
+            if agentObservation.recognizedPID != foreground {
+                agentObservation.recognizedPID = nil
+                agentObservation.recognizedKindForPID = nil
+            }
             agentObservation.lastForegroundPID = foreground
             if !processIsAgent {
                 agentObservation.integrationPhase = nil
