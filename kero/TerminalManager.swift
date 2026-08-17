@@ -115,12 +115,19 @@ final class TerminalManager: nonisolated ObservableObject {
     /// snapshot over the final full one.
     private static var isQuitting = false
     private static var didReopenWindows = false
+    /// XCTest injects the bundle into the running app. Skip restore and
+    /// autosave then so a test run neither spawns the developer's saved
+    /// shells nor rewrites their layout in the Debug build's UserDefaults.
+    static let isRunningUnitTests =
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
     init() {
         if !Self.hasLoadedStore {
             Self.hasLoadedStore = true
-            Self.pendingRestores = SessionStore.load()
-            Self.pendingHistories = TerminalHistoryStore.load()
+            if !Self.isRunningUnitTests {
+                Self.pendingRestores = SessionStore.load()
+                Self.pendingHistories = TerminalHistoryStore.load()
+            }
         }
         Self.registry.append(self)
         var restored = false
@@ -873,7 +880,7 @@ final class TerminalManager: nonisolated ObservableObject {
     // MARK: - Persistence
 
     private static func saveAll(captureTerminalHistory: Bool) {
-        guard !registry.isEmpty else { return }
+        guard !isRunningUnitTests, !registry.isEmpty else { return }
         var snapshots: [SessionSnapshot] = []
         var histories: [String: String] = [:]
         for manager in registry {
