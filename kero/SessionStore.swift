@@ -221,7 +221,15 @@ enum SessionStore {
 
     static func load() -> [SessionSnapshot] {
         guard let data = UserDefaults.standard.data(forKey: key) else { return [] }
-        return decode(data)
+        let windows = decode(data)
+        if windows.isEmpty, !data.isEmpty {
+            // Neither format decoded. Keep the bytes so a downgrade or a bad
+            // write can be recovered by hand instead of being overwritten by
+            // the next autosave.
+            UserDefaults.standard.set(data, forKey: key + ".backup")
+            NSLog("kero: session snapshot did not decode; kept \(data.count) bytes under \(key).backup")
+        }
+        return windows
     }
 
     /// Decodes the current multi-window format, falling back to the
