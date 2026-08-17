@@ -564,13 +564,14 @@ extension TerminalSession {
         }
 
         if foreground != agentObservation.lastForegroundPID {
-            // A different foreground process invalidates the cached kind.
-            if agentObservation.recognizedPID != foreground {
-                agentObservation.recognizedPID = nil
-                agentObservation.recognizedKindForPID = nil
-            }
             agentObservation.lastForegroundPID = foreground
             if !processIsAgent {
+                // Left the agent (or never had one). Drop recognition so a
+                // later pid does not reuse a stale kind; the fill path above
+                // already replaced the cache when the new foreground is still
+                // an agent candidate.
+                agentObservation.recognizedPID = nil
+                agentObservation.recognizedKindForPID = nil
                 agentObservation.integrationPhase = nil
                 agentObservation.integrationReason = nil
             }

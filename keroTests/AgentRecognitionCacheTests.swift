@@ -29,4 +29,29 @@ final class AgentRecognitionCacheTests: XCTestCase {
         XCTAssertNil(state.recognizedPID)
         XCTAssertNil(state.recognizedKindForPID)
     }
+
+    /// Mirrors the poll's cache-hit condition: a positive kind for the current
+    /// foreground pid is reused; clearing both fields (shell takeover) drops it.
+    @MainActor
+    func testPositiveCacheHitUntilClearedOnShellTakeover() {
+        let state = KeroAgentObservationState()
+        let foreground: pid_t = 4242
+        state.recognizedPID = foreground
+        state.recognizedKindForPID = .claude
+
+        let hit =
+            state.recognizedPID == foreground
+            ? state.recognizedKindForPID
+            : nil
+        XCTAssertEqual(hit, .claude)
+
+        // Shell takeover clears both fields (see refreshAutomationAgentState).
+        state.recognizedPID = nil
+        state.recognizedKindForPID = nil
+        let afterClear =
+            state.recognizedPID == foreground
+            ? state.recognizedKindForPID
+            : nil
+        XCTAssertNil(afterClear)
+    }
 }
