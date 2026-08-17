@@ -742,7 +742,7 @@ final class GitStatusModel: nonisolated ObservableObject {
                     if requiresStableHead {
                         let liveStatus = Self.runGit(
                             ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=no"],
-                            in: expectedRepositoryRoot
+                            in: expectedRepositoryRoot, timeout: 10
                         )
                         let live = liveStatus.status == 0
                             ? Self.parseStatus(liveStatus.stdout)
@@ -763,6 +763,9 @@ final class GitStatusModel: nonisolated ObservableObject {
 
                 for args in commands {
                     transcript.append("$ git " + Self.displayCommand(args))
+                    // Deliberately unbounded: this is the user's own command
+                    // (push, pull, commit …) and its progress is visible in the
+                    // operation transcript. Cancellation belongs to the UI.
                     let run = Self.runGit(args, in: dir)
                     let text = [run.stdout, run.stderr]
                         .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -873,7 +876,7 @@ final class GitStatusModel: nonisolated ObservableObject {
                 }
                 let liveStatus = Self.runGit(
                     ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=no"],
-                    in: expectedRepositoryRoot
+                    in: expectedRepositoryRoot, timeout: 10
                 )
                 let live = liveStatus.status == 0 ? Self.parseStatus(liveStatus.stdout) : nil
                 guard let live,
@@ -952,10 +955,6 @@ final class GitStatusModel: nonisolated ObservableObject {
     private nonisolated struct TrashResult: Sendable {
         let moved: [String]
         let failure: String?
-    }
-
-    private nonisolated final class PipeData: @unchecked Sendable {
-        var value = Data()
     }
 
     private func invalidateStatusRefresh() {
@@ -1121,80 +1120,14 @@ final class GitStatusModel: nonisolated ObservableObject {
         var loadedDetails = false
     }
 
-    /// Runs Git while draining stdout and stderr concurrently. Dedicated
-    /// reader threads are intentional: several restored diff tabs can call
-    /// this from Swift's cooperative executor at once, and dispatching the
-    /// readers back onto the shared pool can starve every pipe drain.
+    /// Runs Git via `GitProcess.run` and decodes stdout/stderr to `String`.
     nonisolated static func runGit(
         _ args: [String], in dir: String, timeout: TimeInterval? = nil
     ) -> (status: Int32, stdout: String, stderr: String) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-        process.arguments = args
-        process.currentDirectoryURL = URL(fileURLWithPath: dir, isDirectory: true)
-        var env = ProcessInfo.processInfo.environment
-        env["GIT_OPTIONAL_LOCKS"] = "0"
-        // Fail rather than hanging on a credential prompt behind the app.
-        env["GIT_TERMINAL_PROMPT"] = "0"
-        // Git diagnostics are parsed only to distinguish an ordinary folder
-        // from a broken repository. Pinning the locale makes that safe and
-        // also keeps relative dates stable in the compact history list.
-        env["LC_ALL"] = "C"
-        process.environment = env
-
-        let stdout = Pipe()
-        let stderr = Pipe()
-        process.standardOutput = stdout
-        process.standardError = stderr
-        process.standardInput = FileHandle.nullDevice
-        let processExited = DispatchSemaphore(value: 0)
-        process.terminationHandler = { _ in processExited.signal() }
-
-        do {
-            try process.run()
-        } catch {
-            return (-1, "", error.localizedDescription)
-        }
-        let outData = PipeData()
-        let errData = PipeData()
-        let readers = DispatchGroup()
-        // These readers are on the synchronous completion path below. Match
-        // the caller so a user-initiated Git request never waits on utility
-        // threads, while background refreshes keep their lower priority.
-        let readerQualityOfService = Thread.current.qualityOfService
-        readers.enter()
-        let stdoutReader = Thread {
-            outData.value = stdout.fileHandleForReading.readDataToEndOfFile()
-            readers.leave()
-        }
-        stdoutReader.qualityOfService = readerQualityOfService
-        stdoutReader.start()
-        readers.enter()
-        let stderrReader = Thread {
-            errData.value = stderr.fileHandleForReading.readDataToEndOfFile()
-            readers.leave()
-        }
-        stderrReader.qualityOfService = readerQualityOfService
-        stderrReader.start()
-        var timedOut = false
-        if let timeout {
-            timedOut = processExited.wait(timeout: .now() + timeout) == .timedOut
-            if timedOut {
-                process.terminate()
-                if processExited.wait(timeout: .now() + 1) == .timedOut {
-                    // Git can launch a helper that ignores SIGTERM. It is our
-                    // child, so force it down before waiting for pipe EOF.
-                    Darwin.kill(process.processIdentifier, SIGKILL)
-                    process.waitUntilExit()
-                }
-            }
-        } else {
-            process.waitUntilExit()
-        }
-        readers.wait()
-        let output = String(data: outData.value, encoding: .utf8) ?? ""
-        var errorOutput = String(data: errData.value, encoding: .utf8) ?? ""
-        if timedOut {
+        let run = GitProcess.run(args, in: dir, timeout: timeout)
+        let output = String(data: run.stdout, encoding: .utf8) ?? ""
+        var errorOutput = String(data: run.stderr, encoding: .utf8) ?? ""
+        if run.timedOut {
             let timeoutMessage = String(localized: "Git did not respond in time.")
             if !errorOutput.isEmpty, !errorOutput.hasSuffix("\n") {
                 errorOutput += "\n"
@@ -1202,11 +1135,7 @@ final class GitStatusModel: nonisolated ObservableObject {
             errorOutput += timeoutMessage
             return (-2, output, errorOutput)
         }
-        return (
-            process.terminationStatus,
-            output,
-            errorOutput
-        )
+        return (run.status, output, errorOutput)
     }
 
     /// Resolves the active repository and distinguishes a normal non-repo
@@ -1356,7 +1285,7 @@ final class GitStatusModel: nonisolated ObservableObject {
     }
 
     private nonisolated static func resolveRepositoryRoot(in root: String) -> String? {
-        let top = runGit(["rev-parse", "--show-toplevel"], in: root)
+        let top = runGit(["rev-parse", "--show-toplevel"], in: root, timeout: 5)
         guard top.status == 0 else { return nil }
         let path = strippingTrailingLineEnding(top.stdout)
         return path.isEmpty ? nil : path
