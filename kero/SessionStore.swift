@@ -221,7 +221,21 @@ enum SessionStore {
 
     static func load() -> [SessionSnapshot] {
         guard let data = UserDefaults.standard.data(forKey: key) else { return [] }
-        return decode(data)
+        // A valid empty `AppSnapshot(windows: [])` also yields `[]` from
+        // `decode` — only back up when neither format actually parses.
+        let decodedAsApp = (try? JSONDecoder().decode(AppSnapshot.self, from: data)) != nil
+        let decodedAsSingle = (try? JSONDecoder().decode(SessionSnapshot.self, from: data)) != nil
+        if decodedAsApp || decodedAsSingle {
+            return decode(data)
+        }
+        if !data.isEmpty {
+            // Neither format decoded. Keep the bytes so a downgrade or a bad
+            // write can be recovered by hand instead of being overwritten by
+            // the next autosave.
+            UserDefaults.standard.set(data, forKey: key + ".backup")
+            NSLog("kero: session snapshot did not decode; kept \(data.count) bytes under \(key).backup")
+        }
+        return []
     }
 
     /// Decodes the current multi-window format, falling back to the

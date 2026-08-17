@@ -71,9 +71,12 @@ enum TerminalHistorySerializer {
         else { return nil }
 
         var capture = String(decoding: data, as: UTF8.self)
-        // A tail read can start halfway through a UTF-8 scalar or ANSI run.
-        // Discard its first partial row so no fragment reaches the thumbnail.
-        if start > 0, let newline = capture.firstIndex(of: "\n") {
+        if start > 0 {
+            // A tail read can start halfway through a UTF-8 scalar or ANSI run.
+            // Discard its first partial row; if the whole tail is one row there
+            // is nothing whole to show, and a fragment (possibly beginning with
+            // U+FFFD) must not reach the thumbnail or `kero +pane read`.
+            guard let newline = capture.firstIndex(of: "\n") else { return nil }
             capture.removeSubrange(...newline)
         }
         capture = capture
@@ -447,9 +450,14 @@ enum TerminalHistoryStore {
         }
         guard let data = try? JSONEncoder().encode(histories) else { return }
         do {
+            // Scrollback can contain anything shown on screen. Keep the file
+            // private, matching the CLI state and per-session launch artifacts.
             try FileManager.default.createDirectory(
-                at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700])
             try data.write(to: fileURL, options: .atomic)
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
         } catch {
             NSLog("kero: failed to write \(fileURL.path): \(error)")
         }

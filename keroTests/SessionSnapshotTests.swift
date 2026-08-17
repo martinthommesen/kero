@@ -162,6 +162,14 @@ final class SessionSnapshotTests: XCTestCase {
         XCTAssertTrue(SessionStore.decode(Data("nope".utf8)).isEmpty)
     }
 
+    /// A well-formed empty multi-window snapshot must decode as `[]` (not be
+    /// treated as corrupt). `load()` only backs up when neither format parses.
+    func testDecodeEmptyWindowsAppSnapshot() throws {
+        let data = try JSONEncoder().encode(AppSnapshot(windows: []))
+        XCTAssertFalse(data.isEmpty)
+        XCTAssertTrue(SessionStore.decode(data).isEmpty)
+    }
+
     // MARK: - Legacy pre-split layout shapes (TabSnapshot.init(from:))
 
     /// The original pre-split shape: a tab was a bare `PaneContentSnapshot`,

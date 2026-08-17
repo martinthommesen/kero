@@ -123,7 +123,7 @@ final class SyntaxHighlightCoordinator {
     private var highlighter: Neon.Highlighter?
     private let language: SyntaxLanguage
     private let tsLanguage: SwiftTreeSitter.Language
-    private let tsClient: TreeSitterClient
+    private let tsClient: TreeSitterClient?
     private let highlightsData: Data
     /// Injections query bytes for the root language, or `nil` when it embeds no
     /// other languages. Non-nil selects the injection-aware token provider.
@@ -148,7 +148,7 @@ final class SyntaxHighlightCoordinator {
         // Weak throughout: this coordinator is reachable from the text view
         // (view → plugins → events → coordinator), so any strong capture of
         // the view here closes a retain cycle. See `SyntaxHighlightPlugin.setUp`.
-        tsClient = try! TreeSitterClient(language: tsLanguage) { [weak textView] codePointIndex in
+        tsClient = try? TreeSitterClient(language: tsLanguage) { [weak textView] codePointIndex in
             guard let textView,
                   let location = textView.textContentManager.location(at: codePointIndex),
                   let position = textView.textContentManager.position(location)
@@ -157,8 +157,13 @@ final class SyntaxHighlightCoordinator {
             }
             return Point(row: position.row, column: position.column)
         }
+        if tsClient == nil {
+            // A grammar/runtime ABI mismatch is not worth a crash: the file
+            // opens uncolored, matching how query compile failures degrade.
+            NSLog("kero: TreeSitterClient failed for \(language); highlighting disabled")
+        }
 
-        tsClient.invalidationHandler = { [weak self] indexSet in
+        tsClient?.invalidationHandler = { [weak self] indexSet in
             self?.highlighter?.invalidate(.set(indexSet))
         }
 
@@ -192,8 +197,8 @@ final class SyntaxHighlightCoordinator {
 
         // Parse the whole document once up front.
         let documentRange = NSRange(textView.textContentManager.documentRange, in: textView.textContentManager)
-        tsClient.willChangeContent(in: documentRange)
-        tsClient.didChangeContent(
+        tsClient?.willChangeContent(in: documentRange)
+        tsClient?.didChangeContent(
             in: documentRange,
             delta: textView.textContentManager.length,
             limit: textView.textContentManager.length,
@@ -296,6 +301,7 @@ final class SyntaxHighlightCoordinator {
     }
 
     private func setTokenProvider(query: SwiftTreeSitter.Query, textContentManager: NSTextContentManager) {
+        guard let tsClient else { return }
         highlighter?.tokenProvider = tsClient.tokenProvider(with: query) { range, _ in
             guard !range.isEmpty else { return nil }
             return textContentManager.attributedString(in: NSTextRange(range, provider: textContentManager))?.string
@@ -327,8 +333,12 @@ final class SyntaxHighlightCoordinator {
                 completion(.success(.noChange))
                 return
             }
+            guard let tsClient = self.tsClient else {
+                completion(.success(.noChange))
+                return
+            }
 
-            self.tsClient.executeHighlightsQuery(highlightsQuery, in: range, textProvider: textProvider) { baseResult in
+            tsClient.executeHighlightsQuery(highlightsQuery, in: range, textProvider: textProvider) { baseResult in
                 switch baseResult {
                 case .failure(let error):
                     completion(.failure(error))
@@ -337,7 +347,7 @@ final class SyntaxHighlightCoordinator {
                     // Same tree, so this resolves against the state the base
                     // tokens came from; an embedded region's own tokens are
                     // appended so they layer over the base `@none`.
-                    self.tsClient.executeInjectionsQuery(injectionsQuery, in: range, textProvider: textProvider) { injectionResult in
+                    tsClient.executeInjectionsQuery(injectionsQuery, in: range, textProvider: textProvider) { injectionResult in
                         if case .success(let injections) = injectionResult {
                             for injection in injections {
                                 tokens.append(contentsOf: self.injectedTokens(for: injection, textProvider: textProvider))
@@ -430,12 +440,12 @@ final class SyntaxHighlightCoordinator {
     }
 
     func willChangeContent(in range: NSRange) {
-        tsClient.willChangeContent(in: range)
+        tsClient?.willChangeContent(in: range)
     }
 
     func didChangeContent(_ textContentManager: NSTextContentManager, in range: NSRange, delta: Int, limit: Int) {
         guard let string = textContentManager.attributedString(in: nil)?.string else { return }
-        tsClient.didChangeContent(
+        tsClient?.didChangeContent(
             in: range,
             delta: delta,
             limit: limit,
