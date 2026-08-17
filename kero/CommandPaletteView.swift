@@ -793,16 +793,16 @@ struct CommandPaletteView: View {
     private nonisolated static func gitProjectFilePaths(in root: String) -> Set<String>? {
         var tracked = GitStatusModel.runGit(
             ["ls-files", "--cached", "--recurse-submodules", "-z"],
-            in: root
+            in: root, timeout: 15
         )
         // A missing or broken submodule should not disable search for the rest
         // of the repository.
         if tracked.status != 0 {
-            tracked = GitStatusModel.runGit(["ls-files", "--cached", "-z"], in: root)
+            tracked = GitStatusModel.runGit(["ls-files", "--cached", "-z"], in: root, timeout: 15)
         }
         let untracked = GitStatusModel.runGit(
             ["ls-files", "--others", "--exclude-standard", "-z"],
-            in: root
+            in: root, timeout: 15
         )
         guard tracked.status == 0, untracked.status == 0 else { return nil }
         return Set(nulSeparatedPaths(tracked.stdout) + nulSeparatedPaths(untracked.stdout))

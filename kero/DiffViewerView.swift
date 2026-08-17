@@ -347,7 +347,7 @@ final class DiffTab: nonisolated ObservableObject, nonisolated Identifiable {
     }
 
     private nonisolated static func gitContent(_ spec: String, in root: String) -> GitContent {
-        let size = GitStatusModel.runGit(["cat-file", "-s", spec], in: root)
+        let size = GitStatusModel.runGit(["cat-file", "-s", spec], in: root, timeout: 10)
         guard size.status == 0 else { return .missing }
         let byteCount = Int(size.stdout.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
         guard byteCount <= maxBytes else { return .tooLarge }
@@ -381,7 +381,7 @@ final class DiffTab: nonisolated ObservableObject, nonisolated Identifiable {
 
     private nonisolated static func isUnmerged(path: String, in root: String) -> Bool {
         let run = GitStatusModel.runGit(
-            ["--literal-pathspecs", "ls-files", "--unmerged", "--", path], in: root
+            ["--literal-pathspecs", "ls-files", "--unmerged", "--", path], in: root, timeout: 10
         )
         return run.status == 0 && !run.stdout.isEmpty
     }

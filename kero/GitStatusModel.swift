@@ -742,7 +742,7 @@ final class GitStatusModel: nonisolated ObservableObject {
                     if requiresStableHead {
                         let liveStatus = Self.runGit(
                             ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=no"],
-                            in: expectedRepositoryRoot
+                            in: expectedRepositoryRoot, timeout: 10
                         )
                         let live = liveStatus.status == 0
                             ? Self.parseStatus(liveStatus.stdout)
@@ -763,6 +763,9 @@ final class GitStatusModel: nonisolated ObservableObject {
 
                 for args in commands {
                     transcript.append("$ git " + Self.displayCommand(args))
+                    // Deliberately unbounded: this is the user's own command
+                    // (push, pull, commit …) and its progress is visible in the
+                    // operation transcript. Cancellation belongs to the UI.
                     let run = Self.runGit(args, in: dir)
                     let text = [run.stdout, run.stderr]
                         .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -873,7 +876,7 @@ final class GitStatusModel: nonisolated ObservableObject {
                 }
                 let liveStatus = Self.runGit(
                     ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=no"],
-                    in: expectedRepositoryRoot
+                    in: expectedRepositoryRoot, timeout: 10
                 )
                 let live = liveStatus.status == 0 ? Self.parseStatus(liveStatus.stdout) : nil
                 guard let live,
@@ -1282,7 +1285,7 @@ final class GitStatusModel: nonisolated ObservableObject {
     }
 
     private nonisolated static func resolveRepositoryRoot(in root: String) -> String? {
-        let top = runGit(["rev-parse", "--show-toplevel"], in: root)
+        let top = runGit(["rev-parse", "--show-toplevel"], in: root, timeout: 5)
         guard top.status == 0 else { return nil }
         let path = strippingTrailingLineEnding(top.stdout)
         return path.isEmpty ? nil : path
