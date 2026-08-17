@@ -17,9 +17,20 @@
 		FF519F43300BBE2100D8B982 /* PierreDiffsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000D1 /* PierreDiffsSwift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		AA70000000000000000000A5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FF3FDD6B300B6A7400112486 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FF3FDD72300B6A7400112486;
+			remoteInfo = kero;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		AA50000000000000000000A0 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		AA50000000000000000000A1 /* Local.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.example.xcconfig; sourceTree = "<group>"; };
+		AA70000000000000000000A0 /* keroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = keroTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF3FDD73300B6A7400112486 /* Kero Debug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kero Debug.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -34,6 +45,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		AA70000000000000000000A1 /* keroTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = keroTests;
+			sourceTree = "<group>";
+		};
 		FF3FDD75300B6A7400112486 /* kero */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -45,6 +61,11 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AA70000000000000000000A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
 		FF3FDD70300B6A7400112486 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
@@ -75,6 +96,7 @@
 			children = (
 				AA50000000000000000000A2 /* Config */,
 				FF3FDD75300B6A7400112486 /* kero */,
+				AA70000000000000000000A1 /* keroTests */,
 				FF3FDD74300B6A7400112486 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -83,6 +105,7 @@
 			isa = PBXGroup;
 			children = (
 				FF3FDD73300B6A7400112486 /* Kero Debug.app */,
+				AA70000000000000000000A0 /* keroTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -119,6 +142,27 @@
 			productReference = FF3FDD73300B6A7400112486 /* Kero Debug.app */;
 			productType = "com.apple.product-type.application";
 		};
+		AA70000000000000000000A7 /* keroTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA70000000000000000000AA /* Build configuration list for PBXNativeTarget "keroTests" */;
+			buildPhases = (
+				AA70000000000000000000A2 /* Sources */,
+				AA70000000000000000000A3 /* Frameworks */,
+				AA70000000000000000000A4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA70000000000000000000A6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA70000000000000000000A1 /* keroTests */,
+			);
+			name = keroTests;
+			productName = keroTests;
+			productReference = AA70000000000000000000A0 /* keroTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -131,6 +175,10 @@
 				TargetAttributes = {
 					FF3FDD72300B6A7400112486 = {
 						CreatedOnToolsVersion = 27.0;
+					};
+					AA70000000000000000000A7 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = FF3FDD72300B6A7400112486;
 					};
 				};
 			};
@@ -160,11 +208,17 @@
 			projectRoot = "";
 			targets = (
 				FF3FDD72300B6A7400112486 /* kero */,
+				AA70000000000000000000A7 /* keroTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		AA70000000000000000000A4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
 		FF3FDD71300B6A7400112486 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
@@ -197,12 +251,25 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AA70000000000000000000A2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 		FF3FDD6F300B6A7400112486 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AA70000000000000000000A6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FF3FDD72300B6A7400112486 /* kero */;
+			targetProxy = AA70000000000000000000A5 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		FF3FDD7C300B6A7600112486 /* Debug configuration for PBXProject "kero" */ = {
@@ -418,6 +485,44 @@
 			};
 			name = Release;
 		};
+		AA70000000000000000000A8 /* Debug configuration for PBXNativeTarget "keroTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sh.kero.dev.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Kero Debug.app/Contents/MacOS/kero";
+			};
+			name = Debug;
+		};
+		AA70000000000000000000A9 /* Release configuration for PBXNativeTarget "keroTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sh.kero.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Kero.app/Contents/MacOS/kero";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -435,6 +540,15 @@
 				FF3FDD7F300B6A7600112486 /* Debug configuration for PBXNativeTarget "kero" */,
 				FF3FDD80300B6A7600112486 /* Release configuration for PBXNativeTarget "kero" */,
 			);
+			defaultConfigurationName = Release;
+		};
+		AA70000000000000000000AA /* Build configuration list for PBXNativeTarget "keroTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA70000000000000000000A8 /* Debug configuration for PBXNativeTarget "keroTests" */,
+				AA70000000000000000000A9 /* Release configuration for PBXNativeTarget "keroTests" */,
+			);
+			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
