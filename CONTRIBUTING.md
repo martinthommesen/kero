@@ -18,6 +18,10 @@ backend's bridge in `Vendor/alacritty-bridge` is a Rust static library, built
 from an Xcode build phase. Building for a second architecture needs its target
 installed too — `rustup target add x86_64-apple-darwin`.
 
+To sign local builds with your own team, copy `Config/Local.example.xcconfig`
+to `Config/Local.xcconfig` and set `DEVELOPMENT_TEAM`. That file is gitignored;
+never commit it.
+
 Open `kero.xcodeproj` and run the `kero` scheme, or:
 
 ```bash
