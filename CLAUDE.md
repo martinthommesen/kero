@@ -9,7 +9,9 @@ an editor, and a diff viewer. Existing SwiftUI code is legacy; AppKit is the UI 
 
 ## Verify
 
-Build, run the app, exercise the change;
+- Unit tests: `xcodebuild -project kero.xcodeproj -scheme kero -configuration Debug -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO test`
+- Rust bridge: `cargo test --manifest-path Vendor/alacritty-bridge/Cargo.toml --locked`
+- Then build, run the app, and exercise the change by hand — most of Kero is UI the tests do not cover.
 
 ## Conventions
 

@@ -26,6 +26,14 @@ xcodebuild -project kero.xcodeproj -scheme kero -configuration Debug -destinatio
 
 Add `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` if you only have Xcode beta.
 
+Run the unit tests (a `keroTests` XCTest bundle hosted by the app) and the
+Rust bridge's tests before opening a PR:
+
+```bash
+xcodebuild -project kero.xcodeproj -scheme kero -configuration Debug -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO test
+cargo test --manifest-path Vendor/alacritty-bridge/Cargo.toml --locked
+```
+
 A Debug build is `sh.kero.dev` and keeps its own state, so it can run beside an
 installed Kero without clobbering it: settings go to
 `~/.config/kero-dev/config.toml`, and the session snapshot, sidebar widths, and
