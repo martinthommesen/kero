@@ -450,9 +450,14 @@ enum TerminalHistoryStore {
         }
         guard let data = try? JSONEncoder().encode(histories) else { return }
         do {
+            // Scrollback can contain anything shown on screen. Keep the file
+            // private, matching the CLI state and per-session launch artifacts.
             try FileManager.default.createDirectory(
-                at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700])
             try data.write(to: fileURL, options: .atomic)
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
         } catch {
             NSLog("kero: failed to write \(fileURL.path): \(error)")
         }
