@@ -96,6 +96,18 @@ Powerline 分隔符和图标字形也能正常显示。
 
 环境变量与兼容约定见[终端后端](/zh/docs/terminal#终端后端)。
 
+### `terminal.cursor-shape`
+
+`"block"` · `"bar"` · `"underline"` — 默认 `"block"`
+
+终端光标的形状，对新建和已有面板都生效。两个终端后端都支持；程序用转义序列自行设置的光标样式在其运行期间仍然优先。
+
+### `terminal.cursor-blinking`
+
+boolean — 默认 `true`
+
+终端光标是否闪烁。设为 `false` 使用稳定光标。
+
 ### `terminal.macos-option-as-alt`
 
 布尔值——默认 `false`
@@ -131,6 +143,8 @@ font-size = 14
 sidebar.font-size = 13
 toolbar.visibility = "auto"
 terminal.font-thicken = true
+terminal.cursor-shape = "bar"
+terminal.cursor-blinking = false
 terminal.macos-option-as-alt = false
 terminal.backend = "alacritty"
 terminal.restore-history = true

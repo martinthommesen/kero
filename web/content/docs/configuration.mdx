@@ -124,6 +124,20 @@ the lower memory footprint.
 See [Terminal backends](/docs/terminal#terminal-backends) for the environment
 variables and compatibility contract.
 
+### `terminal.cursor-shape`
+
+`"block"` · `"bar"` · `"underline"` — default `"block"`
+
+Shape of the terminal cursor in new and existing panes. Both backends honor
+it; a program that sets its own cursor style with an escape sequence still
+wins while it is running.
+
+### `terminal.cursor-blinking`
+
+boolean — default `true`
+
+Whether the terminal cursor blinks. Set to `false` for a steady cursor.
+
 ### `terminal.macos-option-as-alt`
 
 boolean — default `false`
@@ -170,6 +184,8 @@ font-size = 14
 sidebar.font-size = 13
 toolbar.visibility = "auto"
 terminal.font-thicken = true
+terminal.cursor-shape = "bar"
+terminal.cursor-blinking = false
 terminal.macos-option-as-alt = false
 terminal.backend = "alacritty"
 terminal.restore-history = true
