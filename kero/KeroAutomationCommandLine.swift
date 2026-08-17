@@ -769,13 +769,13 @@ enum KeroAutomationCommandLine {
 
     // MARK: - Parsing
 
-    private struct ReadOptions {
+    struct ReadOptions {
         var paneID: String?
         var lines = 80
         var columns = 400
     }
 
-    private struct AgentTarget {
+    struct AgentTarget {
         var alias: String?
         var paneID: String?
 
@@ -786,7 +786,7 @@ enum KeroAutomationCommandLine {
         }
     }
 
-    private static func parsePaneOnly(
+    static func parsePaneOnly(
         _ arguments: [String], command: String
     ) throws -> String? {
         var paneID: String?
@@ -802,7 +802,7 @@ enum KeroAutomationCommandLine {
         return paneID
     }
 
-    private static func parseReadOptions(
+    static func parseReadOptions(
         _ arguments: [String], command: String
     ) throws -> ReadOptions {
         var result = ReadOptions()
@@ -820,7 +820,7 @@ enum KeroAutomationCommandLine {
         return result
     }
 
-    private static func parseAgentTarget(
+    static func parseAgentTarget(
         _ arguments: [String], command: String
     ) throws -> AgentTarget {
         var result = AgentTarget()
