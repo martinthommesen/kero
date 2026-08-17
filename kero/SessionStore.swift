@@ -207,7 +207,7 @@ struct SessionSnapshot: Codable {
 
 /// Persisted top level: one `SessionSnapshot` per open window, in
 /// window-creation order.
-private struct AppSnapshot: Codable {
+struct AppSnapshot: Codable {
     var windows: [SessionSnapshot]
 }
 
@@ -221,6 +221,13 @@ enum SessionStore {
 
     static func load() -> [SessionSnapshot] {
         guard let data = UserDefaults.standard.data(forKey: key) else { return [] }
+        return decode(data)
+    }
+
+    /// Decodes the current multi-window format, falling back to the
+    /// pre-multi-window single snapshot. Kept separate from `load()` so the
+    /// compatibility ladder is testable without touching UserDefaults.
+    static func decode(_ data: Data) -> [SessionSnapshot] {
         if let app = try? JSONDecoder().decode(AppSnapshot.self, from: data) {
             return app.windows
         }
