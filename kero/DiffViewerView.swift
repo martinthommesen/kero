@@ -9,12 +9,6 @@ import Foundation
 import PierreDiffsSwift
 import SwiftUI
 
-/// Mutable pipe storage shared by the two dedicated readers in
-/// `DiffTab.runGitData`. Each instance is written by exactly one reader.
-private nonisolated final class DiffPipeData: @unchecked Sendable {
-    var value = Data()
-}
-
 /// Lightweight UI state that should follow Kero across launches without
 /// becoming a user-facing TOML setting.
 @MainActor
@@ -374,72 +368,15 @@ final class DiffTab: nonisolated ObservableObject, nonisolated Identifiable {
     private nonisolated static func runGitData(
         _ args: [String], in root: String
     ) -> (status: Int32, stdout: Data, stderr: String) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-        process.arguments = args
-        process.currentDirectoryURL = URL(fileURLWithPath: root, isDirectory: true)
-        var environment = ProcessInfo.processInfo.environment
-        environment["GIT_OPTIONAL_LOCKS"] = "0"
-        environment["GIT_TERMINAL_PROMPT"] = "0"
-        environment["LC_ALL"] = "C"
-        process.environment = environment
-
-        let stdout = Pipe()
-        let stderr = Pipe()
-        process.standardOutput = stdout
-        process.standardError = stderr
-        process.standardInput = FileHandle.nullDevice
-
-        do {
-            try process.run()
-        } catch {
-            return (-1, Data(), error.localizedDescription)
-        }
-
-        let outData = DiffPipeData()
-        let errData = DiffPipeData()
-        let captureLimit = maxBytes + 1
-        let readers = DispatchGroup()
-        // Pipe EOF is part of this synchronous Git operation. Matching the
-        // caller avoids a user-initiated diff load waiting on utility readers.
-        let readerQualityOfService = Thread.current.qualityOfService
-        readers.enter()
-        let stdoutReader = Thread {
-            // Drain the pipe so Git cannot deadlock, but retain at most one
-            // byte beyond the limit. The index may change between cat-file's
-            // size check and this read while an agent is working.
-            while true {
-                let chunk: Data
-                do {
-                    guard let next = try stdout.fileHandleForReading.read(upToCount: 64 * 1024),
-                          !next.isEmpty else { break }
-                    chunk = next
-                } catch {
-                    break
-                }
-                let remaining = captureLimit - outData.value.count
-                if remaining > 0 {
-                    outData.value.append(chunk.prefix(remaining))
-                }
-            }
-            readers.leave()
-        }
-        stdoutReader.qualityOfService = readerQualityOfService
-        stdoutReader.start()
-        readers.enter()
-        let stderrReader = Thread {
-            errData.value = stderr.fileHandleForReading.readDataToEndOfFile()
-            readers.leave()
-        }
-        stderrReader.qualityOfService = readerQualityOfService
-        stderrReader.start()
-        process.waitUntilExit()
-        readers.wait()
-        return (
-            process.terminationStatus,
-            outData.value,
-            String(data: errData.value, encoding: .utf8) ?? ""
+        let run = GitProcess.run(
+            args, in: root, timeout: 30, stdoutLimit: maxBytes + 1
         )
+        var stderr = String(data: run.stderr, encoding: .utf8) ?? ""
+        if run.timedOut {
+            stderr += (stderr.isEmpty ? "" : "\n") + String(localized: "Git did not respond in time.")
+            return (-2, run.stdout, stderr)
+        }
+        return (run.status, run.stdout, stderr)
     }
 
     private nonisolated static func isUnmerged(path: String, in root: String) -> Bool {
