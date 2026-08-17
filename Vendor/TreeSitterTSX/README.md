@@ -44,3 +44,6 @@ revision kero pins:
 cp -R "$CHECKOUTS/STTextView-Plugin-Neon/Sources/TreeSitterTSX/"{include,src} \
   Vendor/TreeSitterTSX/Sources/TreeSitterTSX/
 ```
+
+`LICENSE` is tree-sitter-typescript's MIT license, copied alongside the
+grammar; keep it when re-copying `include/` and `src/`.
